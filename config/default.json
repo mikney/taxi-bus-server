@@ -1,0 +1,5 @@
+{
+  "serverPort": 5002,
+  "databaseUrl": "mongodb+srv://genadii:genadii@cluster0.yrcot.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+  "secretKey": "gena"
+}
