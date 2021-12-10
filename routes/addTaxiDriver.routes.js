@@ -47,21 +47,32 @@ router.post('/taxiuser', async (req, res) => {
 router.post('/adddate', async (req, res) => {
   try {
     const {date, taxiDriver, time, month , from} = req.body
+    console.log(req.body)
     const dateDay = new Date({numberDay: date, taxiDriver, time, month, from})
+    if(!dateDay) {
+      console.log('error')
+    }
     await dateDay.save()
     //const d = await Date.findOne({numberDay: date})
     // const departureDate = new DepartureDate({departureDate: dateDay._id})
     // await departureDate.save()
     res.json({message: "Date added success"})
   } catch (e) {
+    res.status(400).json({message: e})
     console.log(e)
   }
 })
 router.post('/addpassengers', async (req, res) => {
   try {
     const {passenger, time, date} = req.body
+    console.log(req.body)
 
-    const result = await Date.findOneAndUpdate({time, numberDay: date},{$push: {passengers: [...passenger]}})
+    // const result = await Date.findOneAndUpdate({time, numberDay: date.date},{$push: {passengers: [...passenger]}})
+    const result = await Date.findOneAndUpdate({time, numberDay: date.date},{$push: {passengers: passenger}})
+    console.log(result)
+    // if(!result) {
+    //   return res.status(400).json({message: 'Date not found'})
+    // }
     const driver = await TaxiDriver.findOne({_id: result.taxiDriver})
     if (!driver) {
       return res.status(400).json({message: 'Driver not found'})
@@ -110,6 +121,9 @@ router.post('/finduserdate', async (req, res) => {
 router.post('/findtaxidriver', async (req, res) => {
   try {
     const {date, month, from} = req.body
+    if (!date || !month || !from) {
+      res.status(400).json({message: `Invalid params: date: ${date}, month: ${month}, from: ${from} `})
+    }
     const result = await Date.find({numberDay: date, month, from})
     if (!result) {
       res.status(400).json({message: `Date ${date} not found`})

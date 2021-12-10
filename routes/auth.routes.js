@@ -7,6 +7,7 @@ const config = require('config')
 const jwt = require('jsonwebtoken')
 const {check, validationResult} = require('express-validator')
 const authMiddleware = require("../middleware/auth.middleware")
+const mailer = require( "../core/mailer")
 
 
 //создаем роут,
@@ -23,7 +24,7 @@ router.post(
     if (!error.isEmpty()) {
       return res.status(401).json({message: 'Incorrect request ', error})
     }
-    const {email, password} = req.body
+    const {email, password, isLongExpire} = req.body
     // проверяем есть ли пользователь в нашей базе данных
     const candidate = await User.findOne({email})
     // если есть выдаем ошибку
@@ -33,7 +34,7 @@ router.post(
       if (!isPassValid) {
         return res.status(404).json({message: 'Invalid password'})
       }
-      const token = jwt.sign({id: candidate.id}, config.get('secretKey') , {expiresIn:'1h'})
+      const token = jwt.sign({id: candidate.id}, config.get('secretKey') , {expiresIn: isLongExpire ? "1y" : "1h"})
       return res.json({
         token,
         user: {
@@ -49,7 +50,7 @@ router.post(
       if (!isPassValid) {
         return res.status(404).json({message: 'Invalid password'})
       }
-      const token = jwt.sign({id: taxiDriver.id}, config.get('secretKey'), {expiresIn: "1h"})
+      const token = jwt.sign({id: taxiDriver.id}, config.get('secretKey'), {expiresIn: isLongExpire ? "1y" : "1h"})
       return res.json({
         token,
         user: {
@@ -58,6 +59,11 @@ router.post(
           userName: taxiDriver.name,
           role: 'taxi'
         }
+      })
+    }
+    if (!candidate) {
+      return res.json({
+        needCreate: true
       })
     }
     // хешируем пароль
@@ -74,12 +80,65 @@ router.post(
   }
 )
 
+router.post("")
+
+let verificationNumber = 533521
+
+router.post('/verification', ((req, res) => {
+  const {email} = req.body
+  if (!email) {
+    return res.status(300).json({message: "Email is not valid"})
+  }
+  mailer.sendMail(
+    {
+      from: "test@gmail.com",
+      to: email,
+      subject: "Подтверждение почты BOOK TAXI",
+      html: `<h3>Для того, чтобы зарегистироваться введите код в форму подтверждения</h3><h1>Код подтверждения: ${verificationNumber}</h1>`,
+    },
+    function (err , info) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(info);
+        res.json({message: "Success"})
+
+      }
+    }
+  )
+}))
+
+router.post("/create", (async (req, res) => {
+  try {
+    const {phone, password, email, checkCode} = req.body
+
+    console.log(typeof checkCode)
+    if (checkCode == verificationNumber) {
+      const hashPass = bcrypt.hashSync(password, 7)
+      // создаем нового пользователя
+      const user = new User({email: phone, password: hashPass})
+      // сохраним пользователя в базе данных
+      await user.save()
+      return res.json({message: "Пользователь был создан", confirmCreate: true})
+    } else {
+      res.status(200).json({message: "Не верный код"})
+    }
+  }
+  catch (e) {
+    console.log(e)
+    res.status(400).json({message: "Server error"})
+  }
+}))
+
+
 
 router.get("/auth", authMiddleware, async (req, res) => {
   try {
     const user = await User.findOne({_id: req.user.id})
+    const longExpire = req?.query?.longExpire
+
     if (user) {
-      const token = jwt.sign({id: user.id}, config.get('secretKey'), {expiresIn: "1h"})
+      const token = jwt.sign({id: user.id}, config.get('secretKey'), {expiresIn: longExpire ? "1y" : "1h"})
       return res.json({
         token,
         user: {
@@ -92,7 +151,7 @@ router.get("/auth", authMiddleware, async (req, res) => {
     }
     const taxiDriver = await Taxi.findOne({_id: req.user.id})
     if (taxiDriver) {
-      const token = jwt.sign({id: taxiDriver.id}, config.get('secretKey'), {expiresIn: "1h"})
+      const token = jwt.sign({id: taxiDriver.id}, config.get('secretKey'), {expiresIn: longExpire ? "1y" : "1h"})
       return res.json({
         token,
         user: {
@@ -117,6 +176,27 @@ router.post('/taxisign', async (req, res) => {
   await driver.save()
   return res.json({message: 'Driver taxi created'})
 })
+
+router.get('/test', (req, res) => {
+  mailer.sendMail(
+    {
+      from: "test@gmail.com",
+      to: "zherkovpasha@gmail.com",
+      subject: "Подтверждение почты React Chat Tutorial",
+      html: `Для того, чтобы подтвердить почту, перейдите по этой ссылке</a>`,
+    },
+    function (err , info) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(info);
+        res.json({message: "Success"})
+
+      }
+    }
+  )
+})
+
 
 
 module.exports = router
