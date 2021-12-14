@@ -89,6 +89,7 @@ router.post('/verification', ((req, res) => {
   if (!email) {
     return res.status(300).json({message: "Email is not valid"})
   }
+  verificationNumber = Math.round(Math.random() * 100000)
   mailer.sendMail(
     {
       from: "test@gmail.com",
