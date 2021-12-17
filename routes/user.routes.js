@@ -48,5 +48,17 @@ router.get('/getorder', (async (req, res) => {
   res.status(200).json({orderTransform})
 }))
 
+router.get('/getuser', ( async (req, res) => {
+  const {id} = req.query
+
+  if (!id) return res.status(404).json({message: "bad params"})
+
+  const user = await User.findOne({_id: id})
+  if (!user) {
+    return res.status(500).json({message: "User not found"})
+  }
+  res.json({user})
+}))
+
 
 module.exports = router

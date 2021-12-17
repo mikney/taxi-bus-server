@@ -40,7 +40,8 @@ router.post(
         user: {
           id: candidate.id,
           email: candidate.email,
-          userName: candidate.userName
+          userName: candidate.userName,
+          avatar: candidate?.avatar,
         }
       })
     }
@@ -57,6 +58,7 @@ router.post(
           id: taxiDriver.id,
           email: taxiDriver.email,
           userName: taxiDriver.name,
+          avatar: taxiDriver?.avatar,
           role: 'taxi'
         }
       })
@@ -146,7 +148,8 @@ router.get("/auth", authMiddleware, async (req, res) => {
           id: user.id,
           email: user.email,
           userName: user.userName,
-          currentOrder: user.currentOrder
+          currentOrder: user.currentOrder,
+          avatar: user.avatar
         }
       })
     }
@@ -159,7 +162,8 @@ router.get("/auth", authMiddleware, async (req, res) => {
           id: taxiDriver.id,
           email: taxiDriver.email,
           userName: taxiDriver.name,
-          role: 'taxi'
+          role: 'taxi',
+          avatar: taxiDriver?.avatar
         }
       })
     }
