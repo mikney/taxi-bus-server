@@ -4,6 +4,10 @@ const TaxiDriver = require('../models/TaxiDriver')
 const DepartureDate = require('../models/DepartureDate')
 const User = require('../models/User')
 const Date = require('../models/Date')
+const uploader = require('../core/multer')
+const cloudinary = require("../core/cloudinary");
+const bcrypt = require("bcryptjs");
+
 
 router.post('/add',
   async (req, res) => {
@@ -17,6 +21,89 @@ router.post('/add',
     }
   }
 )
+
+router.post('/create',
+  async (req, res) => {
+    try {
+      const {phone, password} = req.body
+      const hashPass = bcrypt.hashSync(password, 7)
+
+      const taxiDriver = new TaxiDriver({email: phone, password: hashPass})
+      await taxiDriver.save()
+      res.json({message: `Taxi driver ${phone} was created`})
+    } catch (e) {
+      console.log(e)
+    }
+  }
+)
+
+router.post('/infofill', async (req, res) => {
+  try {
+    const {id, name, surname, carMake, v220, haveWifi, tv, carColor, transporter, number} = req.body
+    const taxiDriver = await TaxiDriver.findByIdAndUpdate(id, { name, surname, carMake, v220, haveWifi, tv, carColor, transporter, number})
+
+    if (taxiDriver?.n === 0 || !taxiDriver) {
+        return res.status(500).json({message: "Driver info didn't update", successes: false})
+    }
+    res.json({successes: true})
+
+  } catch (e) {
+    console.log(e)
+  }
+})
+
+router.post("/addavatar", uploader.single("avatar"), async (req, res) => {
+  try {
+    const {id} = req.query
+    console.log(id)
+    if (!id) {
+      return res.status(400).json({message: "Id not defined"})
+    }
+    try {
+      const user = await TaxiDriver.findOne({_id: id})
+      if (!user) return res.status(400).json({message: "User not found"})
+    } catch (e) {
+      return res.status(500).json({message: "Not valid id"})
+    }
+
+    const avatar = req.file
+    const resp = await cloudinary.v2.uploader.upload(avatar.path, { resource_type: "auto" })
+    if(!resp) {
+      return res.status(400)
+    }
+    await TaxiDriver.updateOne({_id: id}, {avatar: resp.url})
+    res.json({resp})
+  } catch (e) {
+    res.status(500).json({message: e})
+    console.log(e)
+  }
+})
+
+router.post('/addcarphoto', uploader.array("file", 10), async (req, res) => {
+  try {
+    const {id} = req.query
+    const files = req.files;
+    // res.json({files})
+
+      const ArrayUploader = files.map(file => {
+        return cloudinary.v2.uploader.upload(file.path, { resource_type: "auto" })
+      })
+      const resp = await Promise.all(ArrayUploader)
+      const images = resp.map(image => image.url)
+      // const images = ['111111', '312dsfsdfwe']
+      await TaxiDriver.updateOne({_id: id}, {$push: {carPhoto: {$each: images}}})
+      await TaxiDriver.updateOne({_id: id}, {carPhoto: images, infoFilled: true})
+      return res.status(200).json({images: resp.map(image => image.url)})
+
+  } catch (e) {
+    res.status(400).json({message: "error"})
+    console.log(e)
+  }
+})
+
+
+
+
 router.post('/update',
   async (req, res) => {
     try {
@@ -156,21 +243,27 @@ router.post('/pdriver',async (req, res) => {
     if(!result) {
       return res.status(400).json({message: "Driver not found"})
     }
+    console.log('error')
     const arr = await Promise.all(result.map(async (item) => {
+
       return {
+        ...item._doc,
         passengers: await findUser(item.passengers),
         time: item.time,
         date: item.numberDay
       }
     }))
+    // console.log(arr)
     async function findUser(user) {
       let arr = []
       arr =  await Promise.all(user.map(async item => {
         const b = await User.findOne({_id: item})
+        if (!b) return res.status(500).json({message: "ERROR"})
         return b.email
       }))
       return arr
     }
+    // res.status(400).json({message: result})
     res.json(arr)
 
   } catch (e) {

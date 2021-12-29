@@ -1,13 +1,18 @@
 const express = require('express')
 const cloudinary = require('../core/cloudinary')
-const multer = require('multer')
+const uploader = require('../core/multer')
 const router = new express()
 const User = require('../models/User')
 const UploadFile = require('../models/UploadFile')
 
 
-const storage = multer.memoryStorage();
-const uploader = multer({ storage })
+// const storage = multer.memoryStorage();
+// const storage = multer.diskStorage({
+//   filename: function (req, file, cb) {
+//     cb(null, file.fieldname + "-" + Date.now());
+//   },
+// })
+// const uploader = multer({ storage })
 
 
 router.post("/avatar", async (req, res) => {
@@ -18,14 +23,12 @@ router.post("/avatar", async (req, res) => {
     const user = await User.findOne({email: "tet5@mail.ru"})
     if (user?.n === 0 || !user) {
       res.status(500).json({message: "User not update"})
-
     }
     res.json({user})
   } catch (e) {
     console.log(e)
   }
 })
-
 router.post("/upload",  uploader.single("file"), (async (req, res) => {
   const userId = req.query.id;
   const file = req.file;
@@ -88,4 +91,39 @@ router.post("/upload",  uploader.single("file"), (async (req, res) => {
     )
     .end(file.buffer);
 }))
+
+
+router.post("/upe",  uploader.array("file", 2), (async (req, res) => {
+  // const userId = req.query.id;
+  const file = req.file;
+  const files = req.files;
+  console.log(files)
+  console.log(file)
+
+  try {
+    const ArrayUploader = files.map(file => {
+      console.log("path", file.path)
+      return cloudinary.v2.uploader.upload(file.path, { resource_type: "auto" })
+    })
+    const resp = await Promise.all(ArrayUploader)
+    console.log(resp)
+    res.status(200).json({images: resp})
+  } catch (e) {
+    console.log(e)
+    res.status(400).json({message: "ERROR"})
+  }
+  // res.status(200).json({
+  //   file,
+  //   files
+  // })
+})
+)
+
+
+router.post('/info', ((async (req, res) => {
+  const {id ,name, surname, car, wifi, tv, v220} = req.body
+  const user = await User.findOne({_id: id})
+  await User.updateOne({_id: id}, {name, surname, car, wifi, tv, v220})
+
+})))
 module.exports = router

@@ -42,6 +42,7 @@ router.post(
           email: candidate.email,
           userName: candidate.userName,
           avatar: candidate?.avatar,
+          role: candidate?.role
         }
       })
     }
@@ -59,7 +60,8 @@ router.post(
           email: taxiDriver.email,
           userName: taxiDriver.name,
           avatar: taxiDriver?.avatar,
-          role: 'taxi'
+          role: 'taxi',
+          infoFilled: taxiDriver?.infoFilled
         }
       })
     }
@@ -113,18 +115,26 @@ router.post('/verification', ((req, res) => {
 
 router.post("/create", (async (req, res) => {
   try {
-    const {phone, password, email, checkCode} = req.body
+    const {phone, password, email, checkCode, role} = req.body
 
     console.log(typeof checkCode)
-    if (checkCode == verificationNumber) {
+    if(checkCode !== verificationNumber && role === 1) {
+      return res.status(200).json({message: "Не верный код"})
+    }
+    if (true) {
       const hashPass = bcrypt.hashSync(password, 7)
       // создаем нового пользователя
-      const user = new User({email: phone, password: hashPass})
+      let user
+      user = new User({email: phone, password: hashPass, role})
+
+      // if (role) {
+      // } else {
+      //   user = new User({email: phone, password: hashPass})
+      // }
       // сохраним пользователя в базе данных
       await user.save()
       return res.json({message: "Пользователь был создан", confirmCreate: true})
     } else {
-      res.status(200).json({message: "Не верный код"})
     }
   }
   catch (e) {
@@ -149,7 +159,8 @@ router.get("/auth", authMiddleware, async (req, res) => {
           email: user.email,
           userName: user.userName,
           currentOrder: user.currentOrder,
-          avatar: user.avatar
+          avatar: user.avatar,
+          role: user.role
         }
       })
     }
@@ -163,7 +174,8 @@ router.get("/auth", authMiddleware, async (req, res) => {
           email: taxiDriver.email,
           userName: taxiDriver.name,
           role: 'taxi',
-          avatar: taxiDriver?.avatar
+          avatar: taxiDriver?.avatar,
+          infoFilled: taxiDriver?.infoFilled
         }
       })
     }

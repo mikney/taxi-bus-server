@@ -1,6 +1,7 @@
 const Router = require('express')
 const router = new Router()
 const User = require('../models/User')
+const Taxi = require('../models/User')
 const Date = require('../models/Date')
 const TaxiDriver = require('../models/TaxiDriver')
 const mongoose = require("mongoose");
@@ -55,9 +56,12 @@ router.get('/getuser', ( async (req, res) => {
 
   const user = await User.findOne({_id: id})
   if (!user) {
+    const taxiDriver = await TaxiDriver.findOne({_id: id})
+    if(taxiDriver) return res.json({taxiDriver})
     return res.status(500).json({message: "User not found"})
   }
-  res.json({user})
+  return res.json({user})
+
 }))
 
 
