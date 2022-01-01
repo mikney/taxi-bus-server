@@ -1,7 +1,6 @@
 const Router = require('express')
 const router = new Router()
 const User = require('../models/User')
-const Taxi = require('../models/User')
 const Date = require('../models/Date')
 const TaxiDriver = require('../models/TaxiDriver')
 const mongoose = require("mongoose");
@@ -63,6 +62,9 @@ router.get('/getuser', ( async (req, res) => {
   return res.json({user})
 
 }))
+
+
+
 
 
 module.exports = router

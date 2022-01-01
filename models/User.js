@@ -7,7 +7,8 @@ const User = new Schema({
   avatar: {type: String},
   userName: {type: String},
   currentOrder: {type: Map, of: Object},
-  role: {type: Number}
+  role: {type: Number},
+  ban: {type: Boolean}
 })
 
 module.exports = model('User', User)

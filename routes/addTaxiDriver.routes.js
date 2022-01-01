@@ -151,11 +151,18 @@ router.post('/adddate', async (req, res) => {
 })
 router.post('/addpassengers', async (req, res) => {
   try {
-    const {passenger, time, date} = req.body
+    const {passenger, time, date, from} = req.body
     console.log(req.body)
 
     // const result = await Date.findOneAndUpdate({time, numberDay: date.date},{$push: {passengers: [...passenger]}})
-    const result = await Date.findOneAndUpdate({time, numberDay: date.date},{$push: {passengers: passenger}})
+    const search = await Date.findOne({time, numberDay: date.date, from, month: date.month})
+    if (search.passengers.length + passenger.length > 16) return res.status(201).json({message: "Превышенно количество мест"})
+    const haveOrder = search.passengers.find(pass => {
+      if (pass === passenger[0]) return true
+    })
+    console.log("Ответ: ", haveOrder)
+    if (haveOrder) return res.status(201).json({message: "Нельзя создавать больше одного заказа на тоже время"})
+    const result = await Date.findOneAndUpdate({time, numberDay: date.date, month: date.month, from},{$push: {passengers: passenger}})
     console.log(result)
     // if(!result) {
     //   return res.status(400).json({message: 'Date not found'})

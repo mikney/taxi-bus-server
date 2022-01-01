@@ -29,6 +29,9 @@ router.post(
     const candidate = await User.findOne({email})
     // если есть выдаем ошибку
     if (candidate) {
+      if (candidate?.ban) {
+        return res.status(401).json({message: 'Вам был запрещен вход в связи с нарушением правил пользования услугой'})
+      }
       //return res.status(401).json({message: `User with email ${email} already exists`})
       const isPassValid = bcrypt.compareSync(password, candidate.password)
       if (!isPassValid) {
