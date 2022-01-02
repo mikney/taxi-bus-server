@@ -33,15 +33,14 @@ router.get('/getorder', (async (req, res) => {
   const orderTransform = await Promise.all(orderArray.map(async (item) => {
     const taxiDriver = await TaxiDriver.findOne({_id: item.taxiDriver})
    return  {
+    id: item.id,
     numberDay: item.numberDay,
     time: item.time,
     month: item.month,
     from: item.from,
     amount: item.passengers.filter((idDb) => idDb === id).length,
     taxiDriver: {
-      phone: taxiDriver.email,
-      name: taxiDriver.name,
-      car: taxiDriver.carMake
+      ...taxiDriver._doc
     }
   }}))
   console.log(orderArray)
@@ -63,6 +62,21 @@ router.get('/getuser', ( async (req, res) => {
 
 }))
 
+
+
+router.delete("/order", async (req, res) => {
+  const {id}  = req.query
+  console.log(id)
+  if (!id) return res.status(400).json({message: "id not found"})
+  try {
+    const resp = await Date.deleteOne({_id: id})
+    return res.json(resp)
+  } catch (e) {
+    console.log(e)
+    return res.status(400).json({message: "something wrong"})
+  }
+
+})
 
 
 
